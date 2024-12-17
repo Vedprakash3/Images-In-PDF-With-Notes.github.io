@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Upload and Drag</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    #uploadArea {
+      border: 2px dashed #ccc;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .photo-container {
+      margin: 10px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .photo-container img {
+      max-width: 150px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .paragraph {
+      width: 100%;
+      height: 120px;
+      resize: vertical;
+    }
+  </style>
+</head>
+<body>
+  <h1>Photo Upload and Drag</h1>
+  <div id="uploadArea">Click or Drag Photos Here</div>
+  <div id="photoList" class="photo-list"></div>
+  <button id="generatePDF">Generate PDF</button>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    const { jsPDF } = window.jspdf;
+    const uploadArea = document.getElementById("uploadArea");
+    const photoList = document.getElementById("photoList");
+
+    uploadArea.addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.multiple = true;
+      input.addEventListener("change", handleFiles);
+      input.click();
+    });
+
+    uploadArea.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      uploadArea.style.borderColor = "blue";
+    });
+
+    uploadArea.addEventListener("dragleave", () => {
+      uploadArea.style.borderColor = "#ccc";
+    });
+
+    uploadArea.addEventListener("drop", (event) => {
+      event.preventDefault();
+      uploadArea.style.borderColor = "#ccc";
+      const files = event.dataTransfer.files;
+      handleFiles({ target: { files } });
+    });
+
+    function handleFiles(event) {
+      const files = event.target.files;
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const photoContainer = document.createElement("div");
+          photoContainer.classList.add("photo-container");
+
+          const img = document.createElement("img");
+          img.src = reader.result;
+
+          const paragraph = document.createElement("textarea");
+          paragraph.classList.add("paragraph");
+          paragraph.placeholder = "Enter photo information here...";
+
+          photoContainer.appendChild(img);
+          photoContainer.appendChild(paragraph);
+
+          photoList.appendChild(photoContainer);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    document.getElementById("generatePDF").addEventListener("click", () => {
+      const pdf = new jsPDF();
+      const pageHeight = pdf.internal.pageSize.height;
+      const pageWidth = pdf.internal.pageSize.width;
+      let yPosition = 10;
+
+      const photoContainers = document.querySelectorAll(".photo-container");
+
+      photoContainers.forEach((container, index) => {
+        const imgElement = container.querySelector("img");
+        const paragraph = container.querySelector(".paragraph");
+
+        const img = new Image();
+        img.src = imgElement.src;
+
+        img.onload = function () {
+          let imageWidth = img.width;
+          let imageHeight = img.height;
+
+          const maxImageWidth = pageWidth - 40;
+          const maxImageHeight = (pageHeight / 2) - 20;
+
+          if (imageWidth > maxImageWidth) {
+            const scaleFactor = maxImageWidth / imageWidth;
+            imageWidth *= scaleFactor;
+            imageHeight *= scaleFactor;
+          }
+
+          if (imageHeight > maxImageHeight) {
+            const scaleFactor = maxImageHeight / imageHeight;
+            imageWidth *= scaleFactor;
+            imageHeight *= scaleFactor;
+          }
+
+          if (yPosition + imageHeight + 30 > pageHeight) {
+            pdf.addPage();
+            yPosition = 10;
+          }
+
+          pdf.addImage(img, "JPEG", (pageWidth - imageWidth) / 2, yPosition, imageWidth, imageHeight);
+          yPosition += imageHeight + 10;
+
+          const textLines = pdf.splitTextToSize(paragraph.value, pageWidth - 20);
+          textLines.forEach((line, i) => {
+            if (yPosition + 10 > pageHeight) {
+              pdf.addPage();
+              yPosition = 10;
+            }
+            pdf.text(line, 10, yPosition);
+            yPosition += 10;
+          });
+
+          if (index === photoContainers.length - 1) {
+            pdf.save("photos_with_text.pdf");
+          }
+        };
+      });
+    });
+  </script>
+</body>
+</html>
