@@ -4,40 +4,67 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Photo Upload and Drag</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
     }
+
     #uploadArea {
       border: 2px dashed #ccc;
       padding: 20px;
       text-align: center;
       cursor: pointer;
     }
+
     .photo-container {
       margin: 10px 0;
       display: flex;
       flex-direction: column;
       align-items: center;
+      border: 1px solid #eee;
+      padding: 10px;
+      border-radius: 8px;
     }
+
     .photo-container img {
       max-width: 150px;
       margin-bottom: 10px;
       border: 1px solid #ccc;
       border-radius: 5px;
     }
+
     .paragraph {
       width: 100%;
-      height: 120px;
+      height: 100px;
       resize: vertical;
+      margin-bottom: 10px;
+    }
+
+    .remove-btn {
+      background-color: red;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .remove-btn:hover {
+      background-color: darkred;
     }
   </style>
 </head>
+
 <body>
+
   <h1>Photo Upload and Drag</h1>
+
   <div id="uploadArea">Click or Drag Photos Here</div>
-  <div id="photoList" class="photo-list"></div>
+
+  <div id="photoList"></div>
+
   <button id="generatePDF">Generate PDF</button>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -47,6 +74,7 @@
     const uploadArea = document.getElementById("uploadArea");
     const photoList = document.getElementById("photoList");
 
+    // CLICK UPLOAD
     uploadArea.addEventListener("click", () => {
       const input = document.createElement("input");
       input.type = "file";
@@ -56,6 +84,7 @@
       input.click();
     });
 
+    // DRAG EVENTS
     uploadArea.addEventListener("dragover", (event) => {
       event.preventDefault();
       uploadArea.style.borderColor = "blue";
@@ -72,10 +101,13 @@
       handleFiles({ target: { files } });
     });
 
+    // HANDLE FILES
     function handleFiles(event) {
       const files = event.target.files;
+
       Array.from(files).forEach(file => {
         const reader = new FileReader();
+
         reader.onload = () => {
           const photoContainer = document.createElement("div");
           photoContainer.classList.add("photo-container");
@@ -87,15 +119,27 @@
           paragraph.classList.add("paragraph");
           paragraph.placeholder = "Enter photo information here...";
 
+          // ✅ REMOVE BUTTON
+          const removeBtn = document.createElement("button");
+          removeBtn.textContent = "Remove";
+          removeBtn.classList.add("remove-btn");
+
+          removeBtn.addEventListener("click", () => {
+            photoContainer.remove();
+          });
+
           photoContainer.appendChild(img);
           photoContainer.appendChild(paragraph);
+          photoContainer.appendChild(removeBtn);
 
           photoList.appendChild(photoContainer);
         };
+
         reader.readAsDataURL(file);
       });
     }
 
+    // GENERATE PDF
     document.getElementById("generatePDF").addEventListener("click", () => {
       const pdf = new jsPDF();
       const pageHeight = pdf.internal.pageSize.height;
@@ -118,42 +162,56 @@
           const maxImageWidth = pageWidth - 40;
           const maxImageHeight = (pageHeight / 2) - 20;
 
+          // SCALE WIDTH
           if (imageWidth > maxImageWidth) {
-            const scaleFactor = maxImageWidth / imageWidth;
-            imageWidth *= scaleFactor;
-            imageHeight *= scaleFactor;
+            const scale = maxImageWidth / imageWidth;
+            imageWidth *= scale;
+            imageHeight *= scale;
           }
 
+          // SCALE HEIGHT
           if (imageHeight > maxImageHeight) {
-            const scaleFactor = maxImageHeight / imageHeight;
-            imageWidth *= scaleFactor;
-            imageHeight *= scaleFactor;
+            const scale = maxImageHeight / imageHeight;
+            imageWidth *= scale;
+            imageHeight *= scale;
           }
 
+          // PAGE BREAK
           if (yPosition + imageHeight + 30 > pageHeight) {
             pdf.addPage();
             yPosition = 10;
           }
 
-          pdf.addImage(img, "JPEG", (pageWidth - imageWidth) / 2, yPosition, imageWidth, imageHeight);
+          pdf.addImage(img, "JPEG",
+            (pageWidth - imageWidth) / 2,
+            yPosition,
+            imageWidth,
+            imageHeight
+          );
+
           yPosition += imageHeight + 10;
 
           const textLines = pdf.splitTextToSize(paragraph.value, pageWidth - 20);
-          textLines.forEach((line, i) => {
+
+          textLines.forEach(line => {
             if (yPosition + 10 > pageHeight) {
               pdf.addPage();
               yPosition = 10;
             }
+
             pdf.text(line, 10, yPosition);
             yPosition += 10;
           });
 
+          // SAVE PDF AFTER LAST IMAGE
           if (index === photoContainers.length - 1) {
             pdf.save("photos_with_text.pdf");
           }
         };
       });
     });
+
   </script>
+
 </body>
 </html>
