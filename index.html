@@ -9,6 +9,8 @@
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
+      background-color: #FFFFE0;
+      text-align: center;
     }
 
     #uploadArea {
@@ -16,6 +18,8 @@
       padding: 20px;
       text-align: center;
       cursor: pointer;
+      background-color: white;
+      border-radius: 8px;
     }
 
     .photo-container {
@@ -26,6 +30,7 @@
       border: 1px solid #eee;
       padding: 10px;
       border-radius: 8px;
+      background-color: white;
     }
 
     .photo-container img {
@@ -54,6 +59,13 @@
     .remove-btn:hover {
       background-color: darkred;
     }
+
+    #generatePDF {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
   </style>
 </head>
 
@@ -74,7 +86,6 @@
     const uploadArea = document.getElementById("uploadArea");
     const photoList = document.getElementById("photoList");
 
-    // CLICK UPLOAD
     uploadArea.addEventListener("click", () => {
       const input = document.createElement("input");
       input.type = "file";
@@ -84,7 +95,6 @@
       input.click();
     });
 
-    // DRAG EVENTS
     uploadArea.addEventListener("dragover", (event) => {
       event.preventDefault();
       uploadArea.style.borderColor = "blue";
@@ -101,7 +111,6 @@
       handleFiles({ target: { files } });
     });
 
-    // HANDLE FILES
     function handleFiles(event) {
       const files = event.target.files;
 
@@ -119,7 +128,6 @@
           paragraph.classList.add("paragraph");
           paragraph.placeholder = "Enter photo information here...";
 
-          // ✅ REMOVE BUTTON
           const removeBtn = document.createElement("button");
           removeBtn.textContent = "Remove";
           removeBtn.classList.add("remove-btn");
@@ -139,7 +147,6 @@
       });
     }
 
-    // GENERATE PDF
     document.getElementById("generatePDF").addEventListener("click", () => {
       const pdf = new jsPDF();
       const pageHeight = pdf.internal.pageSize.height;
@@ -162,21 +169,18 @@
           const maxImageWidth = pageWidth - 40;
           const maxImageHeight = (pageHeight / 2) - 20;
 
-          // SCALE WIDTH
           if (imageWidth > maxImageWidth) {
             const scale = maxImageWidth / imageWidth;
             imageWidth *= scale;
             imageHeight *= scale;
           }
 
-          // SCALE HEIGHT
           if (imageHeight > maxImageHeight) {
             const scale = maxImageHeight / imageHeight;
             imageWidth *= scale;
             imageHeight *= scale;
           }
 
-          // PAGE BREAK
           if (yPosition + imageHeight + 30 > pageHeight) {
             pdf.addPage();
             yPosition = 10;
@@ -203,7 +207,6 @@
             yPosition += 10;
           });
 
-          // SAVE PDF AFTER LAST IMAGE
           if (index === photoContainers.length - 1) {
             pdf.save("photos_with_text.pdf");
           }
